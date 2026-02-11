@@ -1,0 +1,6 @@
+.git/
+.idea/
+*.iml
+*.log
+.bsp
+output_batches

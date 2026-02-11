@@ -1,0 +1,30 @@
+# === Scala / SBT / Spark ===
+target/
+project/project
+project/target
+
+# === IDEs ===
+.idea/
+.vscode/
+.bloop/
+.metals/
+*.iml
+
+# === Mac/Linux system files ===
+.DS_Store
+
+# === Jupyter Notebooks Checkpoints ===
+.ipynb_checkpoints/
+
+# === Dataset local (ne pas versionner les données lourdes) ===
+yelp_dataset/
+
+# === Fichiers temporaires et logs ===
+*.log
+*.tmp
+
+# === Docker ===
+*.pid
+
+# === Fichiers d'environnement sensibles ===
+.env
