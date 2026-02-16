@@ -1,60 +1,65 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from sqlalchemy import func, desc
+from typing import List, Optional
 from app.core.database import get_db
-from app.models.log import FirewallLog
-from app.schemas.log import Log, LogCreate
-from app.services.analyzer import LogAnalyzer
-from sqlalchemy import func
+from app.models.log import FirewallLog, FirewallSuspiciousIP, FirewallTopPort
+from app.schemas.log import Log, SuspiciousIPOut, TopPortOut
 
 router = APIRouter()
 
-@router.post("/", response_model=Log)
-def create_log(log: LogCreate, db: Session = Depends(get_db)):
-    # 1. Analyze the log
-    analyzed_data = LogAnalyzer.analyze(log)
-    
-    # 2. Create DB Object
-    db_log = FirewallLog(**analyzed_data)
-    
-    # 3. Save to DB
-    db.add(db_log)
-    db.commit()
-    db.refresh(db_log)
-    
-    return db_log
 
 @router.get("/", response_model=List[Log])
-def read_logs(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    logs = db.query(FirewallLog).order_by(FirewallLog.timestamp.desc()).offset(skip).limit(limit).all()
+def read_logs(
+    skip: int = 0,
+    limit: int = 100,
+    severity: Optional[str] = Query(None),
+    action: Optional[str] = Query(None),
+    protocol: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    q = db.query(FirewallLog)
+
+    if severity:
+        q = q.filter(FirewallLog.severity == severity)
+    if action:
+        q = q.filter(FirewallLog.action == action)
+    if protocol:
+        q = q.filter(FirewallLog.protocol == protocol)
+    if search:
+        pattern = f"%{search}%"
+        q = q.filter(
+            FirewallLog.src_ip.ilike(pattern)
+            | FirewallLog.dst_ip.ilike(pattern)
+            | FirewallLog.reason.ilike(pattern)
+            | FirewallLog.firewall_id.ilike(pattern)
+        )
+
+    logs = q.order_by(desc(FirewallLog.timestamp)).offset(skip).limit(limit).all()
     return logs
 
-@router.get("/stats")
-def read_stats(db: Session = Depends(get_db)):
-    total_logs = db.query(FirewallLog).count()
-    total_attacks = db.query(FirewallLog).filter(FirewallLog.log_type == "Attack").count()
-    total_bugs = db.query(FirewallLog).filter(FirewallLog.log_type == "Bug").count()
-    
-    # Severity counts
-    critical = db.query(FirewallLog).filter(FirewallLog.severity == "High").count()
-    medium = db.query(FirewallLog).filter(FirewallLog.severity == "Medium").count()
-    low = db.query(FirewallLog).filter(FirewallLog.severity == "Low").count()
-    
-    # Recent attacks
-    recent_attacks = db.query(FirewallLog)\
-        .filter(FirewallLog.log_type == "Attack")\
-        .order_by(FirewallLog.timestamp.desc())\
-        .limit(5)\
+
+@router.get("/count")
+def count_logs(db: Session = Depends(get_db)):
+    return {"count": db.query(FirewallLog).count()}
+
+
+@router.get("/suspicious-ips", response_model=List[SuspiciousIPOut])
+def get_suspicious_ips(limit: int = 50, db: Session = Depends(get_db)):
+    return (
+        db.query(FirewallSuspiciousIP)
+        .order_by(desc(FirewallSuspiciousIP.blocked_count))
+        .limit(limit)
         .all()
-        
-    return {
-        "total_logs": total_logs,
-        "total_attacks": total_attacks,
-        "total_bugs": total_bugs,
-        "severity": {
-            "critical": critical,
-            "medium": medium,
-            "low": low
-        },
-        "recent_attacks": recent_attacks
-    }
+    )
+
+
+@router.get("/top-ports", response_model=List[TopPortOut])
+def get_top_ports(limit: int = 50, db: Session = Depends(get_db)):
+    return (
+        db.query(FirewallTopPort)
+        .order_by(desc(FirewallTopPort.total_connections))
+        .limit(limit)
+        .all()
+    )

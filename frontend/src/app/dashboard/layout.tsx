@@ -1,11 +1,15 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
   ShieldAlert, 
   Activity, 
   Settings, 
   LogOut,
-  Search
+  Search,
+  Bot
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -31,10 +35,17 @@ export default function DashboardLayout({
             <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Monitoring
             </p>
-            <NavLink href="/dashboard" icon={<ShieldAlert size={20} />} label="Anomaly Tickets" active />
+            <NavLink href="/dashboard" icon={<ShieldAlert size={20} />} label="Anomaly Tickets" />
             <NavLink href="/dashboard/analytics" icon={<LayoutDashboard size={20} />} label="Analytics" />
             <NavLink href="/dashboard/logs" icon={<Search size={20} />} label="Log Search" />
             <NavLink href="/dashboard/network" icon={<Activity size={20} />} label="Network Map" />
+          </div>
+
+          <div className="pt-8">
+             <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              AI
+            </p>
+            <NavLink href="/dashboard/chat" icon={<Bot size={20} />} label="AI Assistant" />
           </div>
 
           <div className="pt-8">
@@ -56,13 +67,18 @@ export default function DashboardLayout({
       {/* Main Content */}
       <main className="flex-1 overflow-auto bg-gradient-to-br from-black to-gray-900 relative">
          <div className="absolute inset-0 pointer-events-none bg-[url('/grid.svg')] opacity-10"></div>
-        {children}
+         <div className="relative h-full">
+          {children}
+         </div>
       </main>
     </div>
   );
 }
 
-function NavLink({ href, icon, label, active = false }: { href: string; icon: React.ReactNode; label: string; active?: boolean }) {
+function NavLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+  const pathname = usePathname();
+  const active = pathname === href;
+  
   return (
     <Link 
       href={href} 

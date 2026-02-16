@@ -49,5 +49,10 @@ data/
 *.sqlite
 *.db
 
-# Frontend (Streamlit)
-.streamlit/secrets.toml
+# Node.js / Next.js (frontend)
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Backup files
+*.bak

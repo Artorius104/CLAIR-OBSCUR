@@ -85,13 +85,33 @@ services:
       - engnetwork
       - dbNetwork
 
-  frontend:
-    build: 
-      context: ./frontend
+  backend_api:
+    build:
+      context: ./backend_fastapi
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "8000:8000"
     environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      AGENTS_URL: "http://agents:8001"
+    depends_on:
+      - postgres
+    networks:
+      - webNetwork
+      - dbNetwork
+
+  agents:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
       DATABASE_USER: ${POSTGRES_USER}
@@ -99,6 +119,20 @@ services:
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
       - postgres
+    networks:
+      - webNetwork
+      - dbNetwork
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:8000"
+    depends_on:
+      - backend_api
     networks:
       - webNetwork
 

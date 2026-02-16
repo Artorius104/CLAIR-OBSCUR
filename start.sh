@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script de démarrage du système d'analyse de logs firewall
-# Usage: ./start.sh [all|backend|frontend|build|clean]
+# Usage: ./start.sh [all|backend|frontend|build|clean|stop]
 
 set -e
 
@@ -38,6 +38,9 @@ start_all() {
     echo ""
     echo "📊 Accès aux interfaces :"
     echo "  - Frontend Web:         http://localhost:3000"
+    echo "  - API Backend:          http://localhost:8000"
+    echo "  - API Docs (Swagger):   http://localhost:8000/docs"
+    echo "  - AI Agents:            http://localhost:8001"
     echo "  - Spark Producer UI:    http://localhost:4040"
     echo "  - Spark Consumer UI:    http://localhost:4041"
     echo ""
@@ -45,12 +48,14 @@ start_all() {
     echo "  docker-compose logs -f [service]"
     echo ""
     echo "  Services disponibles:"
-    echo "  - producer    : Ingestion CSV → Kafka"
-    echo "  - consumer    : Kafka → PostgreSQL"
-    echo "  - frontend    : Interface web Next.js"
-    echo "  - postgres    : Base de données"
-    echo "  - kafka       : Message broker"
-    echo "  - zookeeper   : Coordination Kafka"
+    echo "  - producer     : Ingestion CSV → Kafka"
+    echo "  - consumer     : Kafka → PostgreSQL"
+    echo "  - backend_api  : API FastAPI"
+    echo "  - agents       : Agent IA (OpenAI)"
+    echo "  - frontend     : Interface web Next.js"
+    echo "  - postgres     : Base de données"
+    echo "  - kafka        : Message broker"
+    echo "  - zookeeper    : Coordination Kafka"
 }
 
 # Fonction pour démarrer backend uniquement
@@ -58,10 +63,11 @@ start_backend() {
     echo ""
     echo "🚀 Démarrage du backend (sans frontend)..."
     cd "$PROJECT_ROOT"
-    docker-compose up -d zookeeper kafka postgres producer consumer
+    docker-compose up -d zookeeper kafka postgres producer consumer backend_api agents
     
     echo ""
     echo "✅ Backend démarré !"
+    echo "📊 API: http://localhost:8000/docs"
 }
 
 # Fonction pour démarrer frontend uniquement
@@ -69,13 +75,12 @@ start_frontend() {
     echo ""
     echo "🚀 Démarrage du frontend..."
     cd "$PROJECT_ROOT"
-    docker-compose up -d postgres frontend
+    docker-compose up -d postgres backend_api agents frontend
     
     echo ""
     echo "✅ Frontend démarré !"
     echo "📊 Frontend: http://localhost:3000"
 }
-
 
 # Fonction pour builder les images
 build_all() {
@@ -166,13 +171,13 @@ case "${1:-all}" in
         stop_services
         ;;
     *)
-        echo "Usage: $0 [all|backend|frontend|build|compile|stop|clean]"
+        echo "Usage: $0 [all|backend|frontend|build|stop|clean]"
         echo ""
         echo "Options:"
         echo "  all       - Compiler, builder et démarrer tous les services (défaut)"
         echo "  backend   - Démarrer uniquement les services backend"
-        echo "  frontend  - Démarrer uniquement le frontend (+ PostgreSQL)"
-        echo "  build     - Compiler et builder les images Docker"
+        echo "  frontend  - Démarrer uniquement le frontend (+ API + PostgreSQL)"
+        echo "  build     - Builder les images Docker"
         echo "  stop      - Arrêter les services sans supprimer les données"
         echo "  clean     - Nettoyer complètement le système (réinitialiser tout)"
         exit 1
