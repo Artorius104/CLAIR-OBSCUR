@@ -8,28 +8,28 @@ Système d'analyse de logs firewall en temps réel avec détection de menaces, a
 CSV Dataset (3.3M+ logs)
        │
        ▼
-┌─────────────┐     ┌─────────────┐
-│   Producer   │────▶│    Kafka     │
-│  (Spark/Scala)    │  (Streaming) │
-└─────────────┘     └──────┬──────┘
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │  Consumer    │
-                    │  (Spark)     │
-                    └──────┬──────┘
-                           │
-                           ▼
-┌──────────┐     ┌─────────────────┐     ┌────────────┐
-│ Agents   │────▶│   PostgreSQL    │◀────│ Backend API│
-│ (OpenAI) │     │   (Storage)     │     │ (FastAPI)  │
-└──────────┘     └─────────────────┘     └─────┬──────┘
-                                               │
-                                               ▼
-                                        ┌────────────┐
-                                        │  Frontend   │
-                                        │  (Next.js)  │
-                                        └────────────┘
+┌───────────────┐      ┌──────────────┐
+│   Producer    │────▶│    Kafka     │
+│  (Spark/Scala)│      │  (Streaming) │
+└───────────────┘      └──────┬───────┘
+                              │
+                              ▼
+                       ┌─────────────┐
+                       │  Consumer   │
+                       │  (Spark)    │
+                       └──────┬──────┘
+                              │
+                              ▼
+    ┌──────────┐     ┌─────────────────┐      ┌─────────────┐
+    │ Agents   │────▶│   PostgreSQL    │◀────│ Backend API │
+    │ (OpenAI) │     │   (Storage)     │      │ (FastAPI)   │
+    └──────────┘     └─────────────────┘      └─────┬───────┘
+                                                    │
+                                                    ▼
+                                              ┌────────────┐
+                                              │  Frontend  │
+                                              │  (Next.js) │
+                                              └────────────┘
 ```
 
 ## 📦 Stack Technique
