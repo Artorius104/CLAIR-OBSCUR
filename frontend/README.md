@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🖥️ CLAIR OBSCUR — Frontend
 
-## Getting Started
+Interface web de la plateforme NDR, construite avec Next.js 15, React 19 et Tailwind CSS.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js 15** (App Router, standalone output)
+- **React 19** + TypeScript
+- **Tailwind CSS 4**
+- **Three.js** / React Three Fiber (shader background)
+- **Lucide React** (icônes)
+
+## Pages
+
+| Route                  | Description                                              |
+| ---------------------- | -------------------------------------------------------- |
+| `/`                    | Landing page avec shader animé                           |
+| `/dashboard`           | Anomaly Tickets — logs temps réel (auto-refresh 10s)     |
+| `/dashboard/analytics` | Overview, timeline, breakdowns action/protocole/sévérité |
+| `/dashboard/logs`      | Recherche full-text, filtres, pagination                 |
+| `/dashboard/network`   | IPs suspectes + top ports                                |
+| `/dashboard/chat`      | Assistant IA (OpenAI)                                    |
+| `/dashboard/settings`  | Configuration                                            |
+
+## Structure
+
+```
+src/
+├── app/
+│   ├── page.tsx                  # Landing page
+│   ├── layout.tsx                # Root layout (fonts, globals)
+│   ├── globals.css               # Thème dark, glassmorphism
+│   └── dashboard/
+│       ├── layout.tsx            # Sidebar + navigation
+│       ├── page.tsx              # Anomaly Tickets
+│       ├── analytics/page.tsx    # Analytics
+│       ├── logs/page.tsx         # Log Search
+│       ├── network/page.tsx      # Network Map
+│       └── chat/page.tsx         # AI Assistant
+├── components/
+│   └── ui/ShaderBackground.tsx   # Shader Three.js
+└── lib/
+    └── api.ts                    # Client API typé
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Développement
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Installer les dépendances
+npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Serveur de dev
+npm run dev
+# → http://localhost:3000
 
-## Learn More
+# Build production
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Variables d'Environnement
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Variable              | Défaut                  | Description          |
+| --------------------- | ----------------------- | -------------------- |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | URL de l'API backend |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Docker
 
-## Deploy on Vercel
+Le frontend est conteneurisé via un Dockerfile multi-stage (deps → build → runner).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# Build et run via docker-compose (depuis la racine)
+docker-compose up frontend
+```
