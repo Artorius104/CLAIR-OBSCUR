@@ -21,6 +21,19 @@ Créer un système complet d'analyse de logs firewall permettant :
 - Coder le système d'agents
 - Modifier le frontend
 
+Potentielle stack frontend :
+- Next.js 16.1.6
+- React 19.2
+- Node.js 24 (Active LTS)
+- TypeScript 5.9.3
+- Tailwind CSS 4.1.18
+
+Potentielle stack backend :
+- FastAPI 0.128.7 (API REST)
+- SQLAlchemy 2.0.46
+- OpenTelemetry Python SDK 1.39.1
+
+
 
 ## 🏗️ Architecture Globale
 

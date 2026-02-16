@@ -37,7 +37,7 @@ start_all() {
     echo "✅ Services démarrés !"
     echo ""
     echo "📊 Accès aux interfaces :"
-    echo "  - Dashboard Streamlit:  http://localhost:8501"
+    echo "  - Frontend Web:         http://localhost:3000"
     echo "  - Spark Producer UI:    http://localhost:4040"
     echo "  - Spark Consumer UI:    http://localhost:4041"
     echo ""
@@ -47,7 +47,7 @@ start_all() {
     echo "  Services disponibles:"
     echo "  - producer    : Ingestion CSV → Kafka"
     echo "  - consumer    : Kafka → PostgreSQL"
-    echo "  - streamlit   : Dashboard web"
+    echo "  - frontend    : Interface web Next.js"
     echo "  - postgres    : Base de données"
     echo "  - kafka       : Message broker"
     echo "  - zookeeper   : Coordination Kafka"
@@ -69,12 +69,13 @@ start_frontend() {
     echo ""
     echo "🚀 Démarrage du frontend..."
     cd "$PROJECT_ROOT"
-    docker-compose up -d postgres streamlit
+    docker-compose up -d postgres frontend
     
     echo ""
     echo "✅ Frontend démarré !"
-    echo "📊 Dashboard: http://localhost:8501"
+    echo "📊 Frontend: http://localhost:3000"
 }
+
 
 # Fonction pour builder les images
 build_all() {

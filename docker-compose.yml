@@ -85,12 +85,12 @@ services:
       - engnetwork
       - dbNetwork
 
-  streamlit:
+  frontend:
     build: 
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "8501:8501"
+      - "3000:3000"
     environment:
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
