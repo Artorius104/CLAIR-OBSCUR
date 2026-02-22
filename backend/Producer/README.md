@@ -12,7 +12,7 @@ Ce Producer Spark lit les logs firewall depuis un fichier CSV et les envoie vers
 - ✅ Reprise automatique après redémarrage
 - ✅ Utilisation du `timestamp` comme clé Kafka
 - ✅ Optimisations Kafka (compression, batching, timeouts)
-- ✅ Affichage de la progression en temps réel
+- ✅ Affichage de la progression en temps réel (via console ou Kafka)
 
 ## Structure des données
 
@@ -69,7 +69,7 @@ Le Producer lit des logs firewall avec les colonnes suivantes :
 
 ### Configuration Kafka
 
-Le Producer utilise les paramètres Kafka optimisés :
+Le Producer utilise les paramètres Kafka suivants :
 ```scala
 // Timeouts
 kafka.request.timeout.ms: 300000 (5 minutes)
@@ -131,7 +131,7 @@ docker-compose build producer
 
 ## Exécution
 
-### Avec Docker Compose (recommandé)
+### Avec Docker Compose
 
 ```bash
 cd /home/artorius/Projects/Perso/Hackhathon/CND/DIRISI_hackaton/backend
@@ -170,18 +170,6 @@ Nombre total de batchs à envoyer à Kafka, : 6633233
 - Apache Spark 3.5.0
 - Kafka Client 2.8.1
 - Scala 2.12.18
-
-## Schéma des données
-
-Le schéma Spark utilisé est défini dans `Config.scala` :
-
-```scala
-val firewallSchema = StructType(Array(
-  StructField("timestamp", StringType, nullable = false),
-  StructField("firewall_id", StringType, nullable = false),
-  // ... autres champs
-))
-```
 
 ## Troubleshooting
 

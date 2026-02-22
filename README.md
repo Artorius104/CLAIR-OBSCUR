@@ -54,10 +54,10 @@ CSV Dataset (3.3M+ logs)
 
 ### Configuration
 
-Ajoutez votre clé OpenAI dans le fichier `.env` à la racine :
+Modifiez les variables d'environnements et ajoutez votre clé API vers votre LLM préféré dans le fichier `.env` à la racine :
 
 ```bash
-OPENAI_API_KEY=sk-...
+LLM_API_KEY=sk-...
 ```
 
 ### Lancement
@@ -138,12 +138,12 @@ docker exec -it clair-obscur-kafka-1 kafka-topics.sh --list --bootstrap-server l
 
 ## 🐛 Troubleshooting
 
-| Problème              | Solution                                                                              |
-| --------------------- | ------------------------------------------------------------------------------------- |
-| Dashboard vide        | Vérifier que le Producer/Consumer tournent : `docker-compose logs consumer`           |
-| Chat IA ne répond pas | Vérifier `OPENAI_API_KEY` dans `.env` et redémarrer : `docker-compose restart agents` |
-| Erreur mémoire        | Augmenter la RAM Docker ou réduire `BATCH_SIZE` dans le Producer                      |
-| API inaccessible      | `docker-compose logs backend_api` pour voir les erreurs                               |
+| Problème              | Solution                                                                           |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| Dashboard vide        | Vérifier que le Producer/Consumer tournent : `docker-compose logs consumer`        |
+| Chat IA ne répond pas | Vérifier `LLM_API_KEY` dans `.env` et redémarrer : `docker-compose restart agents` |
+| Erreur mémoire        | Augmenter la RAM Docker ou réduire `BATCH_SIZE` dans le Producer                   |
+| API inaccessible      | `docker-compose logs backend_api` pour voir les erreurs                            |
 
 ## 📚 Documentation détaillée
 

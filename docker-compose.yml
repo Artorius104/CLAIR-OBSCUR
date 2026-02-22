@@ -42,7 +42,7 @@ services:
       SPARK_DRIVER_MEMORY: 2g
       SPARK_EXECUTOR_MEMORY: 2g
       _JAVA_OPTIONS: "-Xms1g -Xmx4g"
-    
+
     volumes:
       - ./data:/app/data/
       - ./backend/Producer/tmp:/app/tmp/
@@ -111,7 +111,7 @@ services:
     ports:
       - "8001:8001"
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LLM_API_KEY: ${LLM_API_KEY}
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
       DATABASE_USER: ${POSTGRES_USER}
@@ -124,7 +124,7 @@ services:
       - dbNetwork
 
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
@@ -149,4 +149,3 @@ networks:
 volumes:
   postgres_data:
     name: nbr_streaming_postgres_data_volume
-

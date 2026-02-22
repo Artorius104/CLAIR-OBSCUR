@@ -16,7 +16,7 @@ app.add_middleware(
 )
 
 # OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=os.getenv("LLM_API_KEY"))
 
 # Database config
 DB_CONFIG = {

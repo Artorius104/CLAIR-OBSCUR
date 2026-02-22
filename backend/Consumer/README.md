@@ -10,6 +10,7 @@ Ce Consumer Spark Streaming récupère les logs firewall depuis Kafka et les sau
 - ✅ Parsing des messages JSON avec le schéma firewall
 - ✅ **Sauvegarde dans PostgreSQL** (table `firewall_logs`)
 - ✅ **Génération de statistiques horaires** (table `firewall_stats_hourly`)
+- A FAIRE - Détection d'anomalies avec machine learning
 - ✅ Affichage des statistiques par batch :
   - Nombre de messages reçus
   - Distribution par action (ALLOW/DENY)
@@ -33,12 +34,13 @@ Le Consumer lit des logs firewall avec 16 colonnes + métadonnées ajoutées par
 └────────┬────────┘
          │
          ▼
-┌─────────────────┐
-│  Spark Consumer │
-│  - Read Stream  │
-│  - Parse JSON   │
-│  - Transform    │
-└────────┬────────┘
+┌─────────────────────┐
+│  Spark Consumer     │
+│  - Read Stream      │
+│  - Parse JSON       │
+│  - Transform        │
+│  - Detect anomalies │
+└────────┬────────────┘
          │
          ▼
 ┌─────────────────┐
@@ -88,7 +90,7 @@ docker-compose build consumer
 
 ## Exécution
 
-### Avec Docker Compose (recommandé)
+### Avec Docker Compose
 
 ```bash
 cd /home/artorius/Projects/Perso/Hackhathon/CND/DIRISI_hackaton/backend
@@ -172,28 +174,6 @@ docker-compose stop consumer
 - Logging des erreurs PostgreSQL
 - Continuation du traitement en cas d'erreur d'agrégation
 
-### Performance
-
-- **Traitement par batch** : 500 logs par défaut
-- **Temps de traitement** : ~2-5 secondes par batch
-- **Throughput** : ~100-250 logs/seconde
-
-## Intégration
-
-### Avec Producer
-
-Le Consumer consomme les données du Producer depuis le topic `topic-firewall-logs`.
-
-### Avec PostgreSQL
-
-- Insertion directe via JDBC
-- Mode `append` pour éviter les doublons
-- Transactions automatiques par batch
-
-### Avec Streamlit
-
-Les données sauvegardées dans PostgreSQL sont immédiatement disponibles pour le dashboard Streamlit.
-
 ## Troubleshooting
 
 ### Le Consumer ne reçoit pas de messages
@@ -251,4 +231,4 @@ SELECT * FROM firewall_stats_hourly ORDER BY hour_timestamp DESC LIMIT 10;
 
 ### Métriques Spark
 
-Accédez à l'interface Spark UI : `http://localhost:4041` (port 4041 pour le Consumer)
+Accédez à l'interface Spark UI : `http://localhost:4041`
