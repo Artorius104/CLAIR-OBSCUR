@@ -3,6 +3,7 @@
 .vscode/
 .idea/
 *.log
+CLAUDE.md
 
 # Python
 __pycache__/
@@ -56,3 +57,11 @@ node_modules/
 
 # Backup files
 *.bak
+
+# Streaming / Flink
+*.jar
+flink-state/
+tmp/
+
+# AWS / local
+.aws/
