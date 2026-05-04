@@ -1,0 +1,5 @@
+apache-flink==1.19.1
+opensearch-py==2.6.0
+clickhouse-connect==0.7.19
+orjson==3.10.7
+python-dotenv==1.0.1

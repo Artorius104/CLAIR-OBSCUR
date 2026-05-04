@@ -21,6 +21,8 @@ RUN pip3 install -r /tmp/requirements.txt
 
 COPY common/ /app/common/
 COPY stream/job/ /app/job/
+COPY stream/submit.sh /app/submit.sh
+RUN chmod +x /app/submit.sh
 
 ENV PYTHONPATH=/app
 

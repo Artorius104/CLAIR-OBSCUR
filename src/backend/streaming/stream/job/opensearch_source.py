@@ -35,10 +35,12 @@ class OpenSearchTailSource(SourceFunction):
     """
 
     def __init__(self) -> None:
+        super().__init__()
         self._running = True
         self._cfg: Config | None = None
         self._client = None
         self._s3 = None
+        self._sqs = None
         self._cursor_ts: str | None = None
         self._cursor_id: str | None = None
 
@@ -50,6 +52,10 @@ class OpenSearchTailSource(SourceFunction):
         TS_FIELD = self._cfg.opensearch_ts_field
         self._client = make_client(self._cfg)
         self._s3 = s3_client(self._cfg.aws_region)
+        if self._cfg.stream_sqs_queue_url:
+            import boto3
+            self._sqs = boto3.client("sqs", region_name=self._cfg.aws_region)
+            log.info("SQS wake-up enabled: %s", self._cfg.stream_sqs_queue_url)
         self._load_cursor()
 
     def cancel(self):  # type: ignore[override]
@@ -87,6 +93,45 @@ class OpenSearchTailSource(SourceFunction):
             {"ts": self._cursor_ts, "id": self._cursor_id},
         )
 
+    # --- SQS-aware sleep -------------------------------------------------
+
+    def _sqs_wait(self, max_sec: int) -> None:
+        """Sleep for up to max_sec seconds.
+
+        If SQS is configured, uses long-polling so we wake up immediately
+        when a "new_docs_detected" or "backfill_complete" message arrives.
+        Falls back to plain time.sleep when SQS is not configured.
+        """
+        if not self._sqs or not self._cfg.stream_sqs_queue_url:
+            time.sleep(max_sec)
+            return
+        deadline = time.monotonic() + max_sec
+        while self._running and time.monotonic() < deadline:
+            remaining = int(deadline - time.monotonic())
+            wait = min(20, max(1, remaining))  # SQS long-poll max is 20s
+            try:
+                resp = self._sqs.receive_message(
+                    QueueUrl=self._cfg.stream_sqs_queue_url,
+                    MaxNumberOfMessages=1,
+                    WaitTimeSeconds=wait,
+                )
+            except Exception:
+                log.warning("SQS receive failed; falling back to sleep", exc_info=True)
+                time.sleep(min(remaining, 20))
+                continue
+            msgs = resp.get("Messages", [])
+            if msgs:
+                for m in msgs:
+                    try:
+                        self._sqs.delete_message(
+                            QueueUrl=self._cfg.stream_sqs_queue_url,
+                            ReceiptHandle=m["ReceiptHandle"],
+                        )
+                    except Exception:
+                        pass  # message will re-appear after visibility timeout
+                log.info("SQS wake-up received; polling OpenSearch now")
+                return
+
     # --- main loop -------------------------------------------------------
 
     def run(self, ctx):  # type: ignore[override]
@@ -114,7 +159,7 @@ class OpenSearchTailSource(SourceFunction):
 
             hits = r["hits"]["hits"]
             if not hits:
-                time.sleep(cfg.poll_interval_sec)
+                self._sqs_wait(cfg.poll_interval_sec)
                 continue
 
             from datetime import datetime, timezone
@@ -142,7 +187,7 @@ class OpenSearchTailSource(SourceFunction):
             if len(hits) < body["size"]:
                 self._save_cursor()
                 pages_since_save = 0
-                time.sleep(cfg.poll_interval_sec)
+                self._sqs_wait(cfg.poll_interval_sec)
 
 
 def output_type():
