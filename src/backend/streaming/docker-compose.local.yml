@@ -1,0 +1,102 @@
+# Local on-prem ingestion: OpenSearch -> PyFlink -> ClickHouse.
+#
+# Bring up with: ./run local up   (from the repo root)
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: clair-obscur-clickhouse
+    ports:
+      - "8123:8123"  # HTTP
+      - "9000:9000"  # native protocol (optional, useful for clickhouse-client)
+    environment:
+      CLICKHOUSE_DB: clair_obscur
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    volumes:
+      - ch_data:/var/lib/clickhouse
+      - ./local/schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  jobmanager:
+    build:
+      context: .
+      dockerfile: local/Dockerfile
+    image: clair-obscur/local-stream:latest
+    container_name: clair-obscur-jobmanager-local
+    command: jobmanager
+    ports:
+      - "8081:8081"
+    env_file:
+      - ${ENV_FILE:-../../../.env}
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: jobmanager
+        state.backend: rocksdb
+        state.backend.incremental: true
+      CLICKHOUSE_HOST: clickhouse
+    volumes:
+      - flink_state:/flink-state
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8081/overview"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    restart: unless-stopped
+
+  taskmanager:
+    image: clair-obscur/local-stream:latest
+    container_name: clair-obscur-taskmanager-local
+    command: taskmanager
+    env_file:
+      - ${ENV_FILE:-../../../.env}
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2
+        state.backend: rocksdb
+        state.backend.incremental: true
+      CLICKHOUSE_HOST: clickhouse
+    volumes:
+      - flink_state:/flink-state
+    depends_on:
+      jobmanager:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    restart: unless-stopped
+
+  submitter:
+    image: clair-obscur/local-stream:latest
+    container_name: clair-obscur-submitter-local
+    env_file:
+      - ${ENV_FILE:-../../../.env}
+    environment:
+      CLICKHOUSE_HOST: clickhouse
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["/app/submit.sh && tail -f /dev/null"]
+    volumes:
+      - ./local/submit.sh:/app/submit.sh:ro
+    depends_on:
+      jobmanager:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      taskmanager:
+        condition: service_started
+    restart: on-failure
+
+volumes:
+  ch_data:
+  flink_state:

@@ -6,6 +6,7 @@ Run: `python -m backfill.run_backfill`
 
 from __future__ import annotations
 
+import json
 import logging
 import multiprocessing as mp
 import sys
@@ -121,6 +122,23 @@ def _iso_plus_hours(ts_iso: str, hours: int) -> str:
     return (dt + timedelta(hours=hours)).isoformat().replace("+00:00", "Z")
 
 
+def _notify_sqs(cfg: Config, cutover_ts: str) -> None:
+    """Send a wake-up message to SQS so the stream job starts immediately.
+    Non-fatal: a failure here must not abort the backfill."""
+    if not cfg.stream_sqs_queue_url:
+        return
+    try:
+        import boto3
+        sqs = boto3.client("sqs", region_name=cfg.aws_region)
+        sqs.send_message(
+            QueueUrl=cfg.stream_sqs_queue_url,
+            MessageBody=json.dumps({"event": "backfill_complete", "cutover_ts": cutover_ts}),
+        )
+        log.info("sent backfill_complete wake-up to SQS")
+    except Exception:
+        log.warning("SQS notify failed (non-fatal)", exc_info=True)
+
+
 def _open_pit(client, index: str) -> str:
     r = client.create_point_in_time(index=index, params={"keep_alive": "10m"})
     return r["pit_id"]
@@ -195,6 +213,7 @@ def main() -> int:
         },
     )
     log.info("wrote s3://%s/%s", cfg.s3_raw_bucket, cutover_key)
+    _notify_sqs(cfg, max_ts_seen)
     return 0
 
 

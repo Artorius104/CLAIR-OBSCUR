@@ -7,15 +7,15 @@ from __future__ import annotations
 
 import logging
 
-from pyflink.common import Configuration, RestartStrategies
+from pyflink.common import Configuration
 from pyflink.common.typeinfo import Types
 from pyflink.datastream import CheckpointingMode, StreamExecutionEnvironment
 from pyflink.datastream.checkpoint_storage import FileSystemCheckpointStorage
 
 from common.config import Config
 
-from .opensearch_source import OpenSearchTailSource
-from .sink import build_file_sink
+from job.opensearch_source import OpenSearchTailSource
+from job.sink import build_file_sink
 
 log = logging.getLogger(__name__)
 
@@ -39,16 +39,6 @@ def main() -> None:
     env.get_checkpoint_config().set_max_concurrent_checkpoints(1)
     env.get_checkpoint_config().set_checkpoint_storage(
         FileSystemCheckpointStorage(cfg.s3a_uri(cfg.s3_checkpoint_prefix))
-    )
-
-    env.set_restart_strategy(
-        RestartStrategies.exponential_delay_restart_strategy(
-            initial_backoff=1_000,
-            max_backoff=60_000,
-            backoff_multiplier=2.0,
-            reset_backoff_threshold=600_000,
-            jitter_factor=0.1,
-        )
     )
 
     source = env.add_source(OpenSearchTailSource(), type_info=Types.STRING()).name("opensearch-tail")

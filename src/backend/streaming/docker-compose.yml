@@ -64,7 +64,5 @@ services:
         condition: service_healthy
     entrypoint: ["/bin/bash", "-c"]
     command: ["/app/submit.sh && tail -f /dev/null"]
-    volumes:
-      - ./stream/submit.sh:/app/submit.sh:ro
     <<: *env
     restart: on-failure
