@@ -2,21 +2,23 @@
 # Dual-mode launcher for the Clair-Obscur pipeline.
 #
 # USAGE
-#   ./run local up               Start ClickHouse + PyFlink stream (background)
-#   ./run local down             Stop everything; CH data persists in volume
-#   ./run local logs [service]   Tail logs (default: all services)
-#   ./run local sql              Open a clickhouse-client REPL
+#   ./scripts/run local up               Start ClickHouse + PyFlink stream (background)
+#   ./scripts/run local down             Stop everything; CH data persists in volume
+#   ./scripts/run local logs [service]   Tail logs (default: all services)
+#   ./scripts/run local sql              Open a clickhouse-client REPL
 #
-#   ./run cloud ingest           Setup S3 bucket + IAM policy, then start ingestion (~1 h)
-#   ./run cloud ingest-stop      Stop a running ingestion container
-#   ./run cloud status           Show ingestion progress + last checkpoint from S3
-#   ./run cloud logs             Tail the running stream-worker container
+#   ./scripts/run cloud ingest           Setup S3 bucket + IAM policy, then start ingestion (~1 h)
+#   ./scripts/run cloud ingest-stop      Stop a running ingestion container
+#   ./scripts/run cloud status           Show ingestion progress + last checkpoint from S3
+#   ./scripts/run cloud logs             Tail the running stream-worker container
 # END USAGE
 
 set -euo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")"
+# Resolve repo root: this script lives in <repo>/scripts/, so go one level up.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$REPO_ROOT"
 
-REPO_ROOT="$(pwd)"
 LOCAL_COMPOSE="src/backend/streaming/docker-compose.local.yml"
 CLOUD_COMPOSE="src/backend/streaming/docker-compose.yml"
 
@@ -206,7 +208,7 @@ case "$TARGET:$CMD" in
 
     echo ""
     echo "Ingestion started. Following logs — Ctrl+C to detach (job keeps running)."
-    echo "Check progress anytime with:  ./run cloud status"
+    echo "Check progress anytime with:  ./scripts/run cloud status"
     echo ""
     exec docker compose -f "$CLOUD_COMPOSE" logs -f
     ;;
