@@ -1,68 +1,37 @@
-# Two profiles:
-#   docker compose --profile backfill run --rm backfill
-#   docker compose --profile stream up -d
+# Ingestion job: local JSONL → S3.
 #
-# Both share the same .env (one-up at the project root).
-
-x-env: &env
-  env_file:
-    - ${ENV_FILE:-.env}
+# Run from the REPO ROOT via:
+#   ./run cloud ingest
+#
+# Or manually:
+#   HOST_DATA_ROOT=$PWD/data/dataset_finale/ingestion \
+#   docker compose -f src/backend/streaming/docker-compose.yml \
+#                  --env-file .env up --build
+#
+# env_file path is relative to THIS file's directory (src/backend/streaming/),
+# so ../../../.env resolves to the repo-root .env.
 
 services:
-  backfill:
-    profiles: ["backfill"]
-    build:
-      context: .
-      dockerfile: backfill/Dockerfile
-    image: ${REGISTRY:-clair-obscur}/backfill:${TAG:-latest}
-    <<: *env
-    restart: "no"
-
-  jobmanager:
-    profiles: ["stream"]
+  stream-worker:
     build:
       context: .
       dockerfile: stream/Dockerfile
     image: ${REGISTRY:-clair-obscur}/stream:${TAG:-latest}
-    command: jobmanager
-    ports:
-      - "8081:8081"
+    command: ["python", "/app/job/ingestion_job.py"]
+    env_file:
+      - ${ENV_FILE:-../../../.env}
     environment:
-      FLINK_PROPERTIES: |
-        jobmanager.rpc.address: jobmanager
-        state.backend: rocksdb
-        state.backend.incremental: true
-    <<: *env
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8081/overview"]
-      interval: 10s
-      timeout: 3s
-      retries: 12
-    restart: unless-stopped
-
-  taskmanager:
-    profiles: ["stream"]
-    image: ${REGISTRY:-clair-obscur}/stream:${TAG:-latest}
-    command: taskmanager
-    depends_on:
-      jobmanager:
-        condition: service_healthy
-    environment:
-      FLINK_PROPERTIES: |
-        jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 2
-        state.backend: rocksdb
-        state.backend.incremental: true
-    <<: *env
-    restart: unless-stopped
-
-  submitter:
-    profiles: ["stream"]
-    image: ${REGISTRY:-clair-obscur}/stream:${TAG:-latest}
-    depends_on:
-      jobmanager:
-        condition: service_healthy
-    entrypoint: ["/bin/bash", "-c"]
-    command: ["/app/submit.sh && tail -f /dev/null"]
-    <<: *env
-    restart: on-failure
+      # Ensure region is always visible to boto3 inside the container.
+      - AWS_REGION=${AWS_REGION:-eu-west-3}
+      # Forward session credentials when using aws sso login / assume-role.
+      # These are empty strings if not set — boto3 falls back to ~/.aws.
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
+    volumes:
+      # Mount dataset read-only. Set HOST_DATA_ROOT to the absolute path of
+      # data/dataset_finale/ingestion/ on the host (set by ./run).
+      - ${HOST_DATA_ROOT}:/data/ingestion:ro
+      # Mount host AWS credentials so SSO tokens / profiles work inside the container.
+      - ${HOME}/.aws:/root/.aws:ro
+    restart: "no"

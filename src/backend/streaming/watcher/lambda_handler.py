@@ -88,6 +88,28 @@ def handler(event: dict, context: Any) -> dict[str, Any]:
     state = _load_state(s3, bucket, state_key)
     last = int(state.get("doc_count", 0))
 
+    # Detect significant drop in doc count — index was likely replaced.
+    # Reset last_count to 0 so the next invocation always fires a wake-up.
+    replaced = last > 0 and current < last * 0.5
+    if replaced:
+        log.warning("doc count dropped %d → %d: index likely replaced; resetting state", last, current)
+        _save_state(s3, bucket, state_key, {
+            "doc_count": 0,
+            "last_checked": datetime.now(timezone.utc).isoformat(),
+            "reset_reason": "count_drop",
+        })
+        # Still send a wake-up so the stream can re-probe and reset its cursor
+        boto3.client("sqs", region_name=region).send_message(
+            QueueUrl=queue,
+            MessageBody=json.dumps({
+                "event": "index_replaced",
+                "count": current,
+                "prev": last,
+                "ts": datetime.now(timezone.utc).isoformat(),
+            }),
+        )
+        return {"replaced": True, "count": current, "prev": last}
+
     if current > last:
         added = current - last
         boto3.client("sqs", region_name=region).send_message(
@@ -107,5 +129,5 @@ def handler(event: dict, context: Any) -> dict[str, Any]:
         log.info("new docs: %d → %d (+%d), SQS message sent", last, current, added)
         return {"new_docs": True, "count": current, "added": added}
 
-    log.info("no new docs (count=%d)", current)
+    log.info("no change (count=%d)", current)
     return {"new_docs": False, "count": current}
