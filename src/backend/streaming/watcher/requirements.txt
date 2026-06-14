@@ -1,1 +1,0 @@
-# No extra packages — only stdlib + boto3 (built-in Lambda Python 3.12 runtime)
