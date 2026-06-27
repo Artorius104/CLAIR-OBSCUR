@@ -29,11 +29,9 @@ class ClickHouseBatchSink(SinkFunction):
         self._batch_size = batch_size
         self._buffer: list[tuple[str, datetime, datetime, str]] = []
         self._client = None
-        self._ts_field: str = ""
 
     def open(self, _runtime_context):  # type: ignore[override]
         cfg = Config.load()
-        self._ts_field = cfg.opensearch_ts_field
         self._client = make_ch_client(cfg)
         log.info(
             "ClickHouseBatchSink ready (host=%s db=%s batch=%d)",
@@ -41,11 +39,10 @@ class ClickHouseBatchSink(SinkFunction):
         )
 
     def invoke(self, value, _context):  # type: ignore[override]
-        # `value` is a JSON string emitted by OpenSearchReplaySource
         rec = orjson.loads(value)
-        ts_str = rec.get(self._ts_field)
+        ts_str = rec.get("timestamp")
         if ts_str is None:
-            log.warning("record missing %s field; dropping", self._ts_field)
+            log.warning("record missing timestamp field; dropping")
             return
         self._buffer.append(
             (rec["id"], _parse_iso(ts_str), _parse_iso(rec["ingest_ts"]), value)

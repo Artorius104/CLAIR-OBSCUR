@@ -1,6 +1,8 @@
-# Local on-prem ingestion: OpenSearch -> PyFlink -> ClickHouse.
+# Local on-prem ingestion: JSONL files -> PyFlink -> ClickHouse.
 #
-# Bring up with: ./run local up   (from the repo root)
+# Bring up with: ./scripts/run local up   (from the repo root)
+# HOST_DATA_ROOT is exported by the run script; override manually if needed:
+#   HOST_DATA_ROOT=$PWD/data/dataset_finale/ingestion ./scripts/run local up
 
 services:
   clickhouse:
@@ -45,6 +47,7 @@ services:
       CLICKHOUSE_HOST: clickhouse
     volumes:
       - flink_state:/flink-state
+      - ${HOST_DATA_ROOT}:/data/ingestion:ro
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8081/overview"]
       interval: 10s
@@ -70,6 +73,7 @@ services:
       CLICKHOUSE_HOST: clickhouse
     volumes:
       - flink_state:/flink-state
+      - ${HOST_DATA_ROOT}:/data/ingestion:ro
     depends_on:
       jobmanager:
         condition: service_healthy
@@ -88,6 +92,7 @@ services:
     command: ["/app/submit.sh && tail -f /dev/null"]
     volumes:
       - ./local/submit.sh:/app/submit.sh:ro
+      - ${HOST_DATA_ROOT}:/data/ingestion:ro
     depends_on:
       jobmanager:
         condition: service_healthy
