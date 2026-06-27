@@ -52,7 +52,7 @@ class ThrottleMap(MapFunction):
         if self._count % _LOG_EVERY == 0:
             elapsed = time.monotonic() - self._start
             rps = self._count / max(elapsed, 1)
-            eta_min = (14_700_000 - self._count) / max(rps, 1) / 60
+            eta_min = (14_721_375 - self._count) / max(rps, 1) / 60
             log.info(
                 "ThrottleMap: %d docs | %.0f rec/s | ETA ~%.0f min",
                 self._count, rps, eta_min,

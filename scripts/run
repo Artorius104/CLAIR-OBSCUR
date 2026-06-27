@@ -155,12 +155,15 @@ case "$TARGET:$CMD" in
   # ---- LOCAL ---------------------------------------------------------------
 
   local:up)
+    export HOST_DATA_ROOT="${REPO_ROOT}/data/dataset_finale/ingestion"
     exec docker compose -f "$LOCAL_COMPOSE" up -d --build
     ;;
   local:down)
+    export HOST_DATA_ROOT="${REPO_ROOT}/data/dataset_finale/ingestion"
     exec docker compose -f "$LOCAL_COMPOSE" down
     ;;
   local:logs)
+    export HOST_DATA_ROOT="${REPO_ROOT}/data/dataset_finale/ingestion"
     exec docker compose -f "$LOCAL_COMPOSE" logs -f "$@"
     ;;
   local:sql)
@@ -198,7 +201,7 @@ case "$TARGET:$CMD" in
 
     # 5. Build + start the ingestion container.
     export HOST_DATA_ROOT="${REPO_ROOT}/data/dataset_finale/ingestion"
-    echo "==> Starting stream-worker (target ~1 h, INGEST_RPS=${INGEST_RPS:-4100})"
+    echo "==> Starting stream-worker (target ~30 min, INGEST_RPS=${INGEST_RPS:-8200})"
     echo "    Source : ${HOST_DATA_ROOT}"
     echo "    Sink   : s3://${BUCKET}/${S3_RAW_PREFIX:-logs-raw}/"
     echo "    Progress checkpoint: s3://${BUCKET}/${META_PREFIX}/ingest_progress.json"
@@ -244,7 +247,7 @@ parts = d.get('parts_written', 0)
 elaps = d.get('elapsed_sec', 0)
 rps   = d.get('rate_rps', docs / max(elaps, 1))
 upd   = d.get('updated_at', '?')
-total = 14_700_000
+total = 14_721_375
 pct   = docs / total * 100
 eta   = (total - docs) / max(rps, 1)
 print(f'  Docs sent  : {docs:,} / {total:,}  ({pct:.1f}%)')
